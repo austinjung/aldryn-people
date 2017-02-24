@@ -67,7 +67,10 @@ class DownloadVcardView(AllowPKsTooMixin, TranslatableSlugMixin, DetailView):
         if not person.vcard_enabled:
             raise Http404
 
-        filename = "%s.vcf" % person.name
+        if person.language_code != 'en':
+            filename = "%s.vcf" % person.translations.model.objects.get(master_id=person.id, language_code='en').name
+        else:
+            filename = "%s.vcf" % person.name
         vcard = person.get_vcard(request)
         try:
             vcard = vcard.decode('utf-8').encode('ISO-8859-1')

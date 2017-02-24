@@ -50,7 +50,7 @@ class PersonAdmin(VersionedPlaceholderAdminMixin,
             'fields': (
                 'name',
                 'slug',
-                'function', 'description',
+                'function', 'description', 'sort_order'
             ),
         }),
         (_('Contact (untranslated)'), {
@@ -88,7 +88,7 @@ class GroupAdmin(VersionedPlaceholderAdminMixin,
             'fields': (
                 'name',
                 'slug',
-                'description',
+                'description', 'sort_order'
             ),
         }),
         (_('Contact (untranslated)'), {

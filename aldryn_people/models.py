@@ -140,6 +140,8 @@ class Group(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
         verbose_name=_('email'), blank=True, default='')
     website = models.URLField(
         verbose_name=_('website'), null=True, blank=True)
+    sort_order = models.IntegerField(
+        verbose_name=_('sort order'), blank=True, default=999999)
 
     @property
     def company_name(self):
@@ -161,6 +163,7 @@ class Group(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
     class Meta:
         verbose_name = _('Group')
         verbose_name_plural = _('Groups')
+        ordering = ['sort_order']
 
     def __str__(self):
         return self.safe_translation_getter(
@@ -217,10 +220,13 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
     user = models.OneToOneField(
         getattr(settings, 'AUTH_USER_MODEL', 'auth.User'),
         null=True, blank=True, related_name='persons')
+    sort_order = models.IntegerField(
+        verbose_name=_('sort order'), blank=True, default=999999)
 
     class Meta:
         verbose_name = _('Person')
         verbose_name_plural = _('People')
+        ordering = ['sort_order']
 
     def __str__(self):
         pkstr = str(self.pk)
@@ -275,10 +281,10 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
 
     def get_vcard(self, request=None):
         vcard = Vcard()
-        function = self.safe_translation_getter('function')
+        person_translation = self.translations.model.objects.get(master_id=self.id, language_code='en')
+        function = person_translation.function
 
-        safe_name = self.safe_translation_getter(
-            'name', default="Person: {0}".format(self.pk))
+        safe_name = person_translation.name
         vcard.add_line('FN', safe_name)
         vcard.add_line('N', [None, safe_name, None, None, None])
 
@@ -298,7 +304,7 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
             vcard.add_line('EMAIL', self.email)
 
         if function:
-            vcard.add_line('TITLE', self.function)
+            vcard.add_line('TITLE', function)
 
         if self.phone:
             vcard.add_line('TEL', self.phone, TYPE='WORK')
@@ -310,28 +316,28 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
         if self.website:
             vcard.add_line('URL', self.website)
 
-        if self.primary_group:
-            group_name = self.primary_group.safe_translation_getter(
-                'name', default="Group: {0}".format(self.primary_group.pk))
-            if group_name:
-                vcard.add_line('ORG', group_name)
-            if (self.primary_group.address or self.primary_group.city or
-                    self.primary_group.postal_code):
-                vcard.add_line('ADR', (
-                    None, None,
-                    self.primary_group.address,
-                    self.primary_group.city,
-                    None,
-                    self.primary_group.postal_code,
-                    None,
-                ), TYPE='WORK')
-
-            if self.primary_group.phone:
-                vcard.add_line('TEL', self.primary_group.phone, TYPE='WORK')
-            if self.primary_group.fax:
-                vcard.add_line('TEL', self.primary_group.fax, TYPE='FAX')
-            if self.primary_group.website:
-                vcard.add_line('URL', self.primary_group.website)
+        # if self.primary_group:
+        #     group_name = self.primary_group.safe_translation_getter(
+        #         'name', default="Group: {0}".format(self.primary_group.pk))
+        #     if group_name:
+        #         vcard.add_line('ORG', group_name)
+        #     if (self.primary_group.address or self.primary_group.city or
+        #             self.primary_group.postal_code):
+        #         vcard.add_line('ADR', (
+        #             None, None,
+        #             self.primary_group.address,
+        #             self.primary_group.city,
+        #             None,
+        #             self.primary_group.postal_code,
+        #             None,
+        #         ), TYPE='WORK')
+        #
+        #     if self.primary_group.phone:
+        #         vcard.add_line('TEL', self.primary_group.phone, TYPE='WORK')
+        #     if self.primary_group.fax:
+        #         vcard.add_line('TEL', self.primary_group.fax, TYPE='FAX')
+        #     if self.primary_group.website:
+        #         vcard.add_line('URL', self.primary_group.website)
 
         return str(vcard)
 
