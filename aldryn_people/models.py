@@ -222,6 +222,8 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
         null=True, blank=True, related_name='persons')
     sort_order = models.IntegerField(
         verbose_name=_('sort order'), blank=True, default=999999)
+    show_in_menu = models.BooleanField(
+        verbose_name=_('show in group menu list'), blank=True, default=False)
 
     class Meta:
         verbose_name = _('Person')

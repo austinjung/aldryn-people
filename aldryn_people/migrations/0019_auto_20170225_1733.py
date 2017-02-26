@@ -11,10 +11,23 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterModelOptions(
+            name='group',
+            options={'ordering': ['sort_order'], 'verbose_name': 'Group', 'verbose_name_plural': 'Groups'},
+        ),
+        migrations.AlterModelOptions(
+            name='person',
+            options={'ordering': ['sort_order'], 'verbose_name': 'Person', 'verbose_name_plural': 'People'},
+        ),
         migrations.AddField(
             model_name='group',
             name='sort_order',
             field=models.IntegerField(default=999999, verbose_name='sort order', blank=True),
+        ),
+        migrations.AddField(
+            model_name='person',
+            name='show_in_menu',
+            field=models.BooleanField(default=False, verbose_name='show in group menu list'),
         ),
         migrations.AddField(
             model_name='person',
