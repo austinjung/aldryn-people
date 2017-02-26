@@ -46,9 +46,10 @@ from djangocms_text_ckeditor.fields import HTMLField
 from filer.fields.image import FilerImageField
 from parler.models import TranslatableModel, TranslatedFields
 from aldryn_reversion.core import version_controlled_content
+from django.core.validators import RegexValidator
 
 
-from .utils import get_additional_styles
+from .utils import get_additional_styles, get_geographic_coordinates
 
 # NOTE: We use LooseVersion and not StrictVersion because sometimes Aldryn uses
 # patched build with version numbers of the form X.Y.Z.postN.
@@ -142,23 +143,8 @@ class Group(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
         verbose_name=_('website'), null=True, blank=True)
     sort_order = models.IntegerField(
         verbose_name=_('sort order'), blank=True, default=999999)
-
-    @property
-    def company_name(self):
-        warnings.warn(
-            '"Group.company_name" has been refactored to "Group.name"',
-            DeprecationWarning
-        )
-        return self.safe_translation_getter('name')
-
-    @property
-    def company_description(self):
-        warnings.warn(
-            '"Group.company_description" has been refactored to '
-            '"Group.description"',
-            DeprecationWarning
-        )
-        return self.safe_translation_getter('description')
+    show_in_menu = models.BooleanField(
+        verbose_name=_('show in group menu list'), blank=True, default=True)
 
     class Meta:
         verbose_name = _('Group')
@@ -222,8 +208,24 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
         null=True, blank=True, related_name='persons')
     sort_order = models.IntegerField(
         verbose_name=_('sort order'), blank=True, default=999999)
-    show_in_menu = models.BooleanField(
-        verbose_name=_('show in group menu list'), blank=True, default=False)
+    unit_number = models.CharField(max_length=10, blank=True, default='', verbose_name=_('Unit number'))
+    street_number = models.CharField(max_length=10, blank=True, default='', verbose_name=_('Street number'))
+    street = models.CharField(max_length=20, blank=True, default='', verbose_name=_('Street/Avenue'))
+    city = models.CharField(max_length=20, blank=True, default='', verbose_name=_('City'))
+    province = models.CharField(max_length=20, blank=True, default='BC', verbose_name=_('Province'))
+    postal = models.CharField(max_length=7, blank=True, default='', verbose_name=_('Postal Code'),
+                              validators=[
+                                  RegexValidator(
+                                      regex='^[a-zA-Z ][0-9 ][a-zA-Z ] [0-9 ][a-zA-Z ][0-9 ]$',
+                                      message='Ex: V1V 9Y9',
+                                      code=_('Invalid Postal Code')
+                                  ),
+                              ]
+             )
+    country = models.CharField(max_length=20, blank=True, default='Canada', verbose_name='Country')
+    latitude = models.FloatField(null=True, blank=True, verbose_name='Latitude')
+    longitude = models.FloatField(null=True, blank=True, verbose_name='Longitude')
+    email_confirmed = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = _('Person')
@@ -250,6 +252,42 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
     @property
     def comment(self):
         return self.safe_translation_getter('description', '')
+
+    @property
+    def address(self):
+        address = ''
+        if self.unit_number not in ['', None]:
+            address += '#%s, ' % self.unit_number
+        if self.street_number not in ['', None]:
+            address += '%s ' % self.street_number
+        if self.street not in ['', None]:
+            address += '%s, ' % self.street
+        if self.city not in ['', None]:
+            address += '%s, ' % self.city
+        address += '%s %s, %s' % (self.province, self.postal, self.country)
+        return address
+
+    def clean(self):
+        geo_location = get_geographic_coordinates(self.get_address_for_geo_location())
+        self.longitude = geo_location['lng']
+        self.latitude = geo_location['lat']
+
+    def get_address_for_geo_location(self):
+        address = ''
+        if self.street_number not in ['', None]:
+            address += '%s ' % self.street_number
+        else:
+            return None
+        if self.street not in ['', None]:
+            address += '%s, ' % self.street
+        else:
+            return None
+        if self.city not in ['', None]:
+            address += '%s, ' % self.city
+        else:
+            return None
+        address += '%s %s, %s' % (self.province, self.postal, self.country)
+        return address
 
     def get_absolute_url(self, language=None):
         if not language:

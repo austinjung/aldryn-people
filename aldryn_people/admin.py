@@ -59,6 +59,11 @@ class PersonAdmin(VersionedPlaceholderAdminMixin,
                 'user', 'vcard_enabled'
             ),
         }),
+        (_('Address (untranslated)'), {
+            'fields': (
+                'unit_number', 'street_number', 'street', 'city', 'province', 'postal', 'country'
+            ),
+        }),
         (None, {
             'fields': (
                 'groups',
