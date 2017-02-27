@@ -104,7 +104,7 @@ class GroupListView(ListView):
         return super(GroupListView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = super(GroupListView, self).get_queryset()
+        qs = super(GroupListView, self).get_queryset().filter(show_in_menu=True)
         # prepare language properties for filtering
         return qs.translated(*self.valid_languages)
 

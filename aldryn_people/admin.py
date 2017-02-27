@@ -93,7 +93,7 @@ class GroupAdmin(VersionedPlaceholderAdminMixin,
             'fields': (
                 'name',
                 'slug',
-                'description', 'sort_order'
+                'description', 'sort_order', 'show_in_menu'
             ),
         }),
         (_('Contact (untranslated)'), {

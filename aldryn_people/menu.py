@@ -52,7 +52,7 @@ class GroupMenu(CMSAttachMenu):
     def get_nodes(self, request):
         nodes = []
         language = get_language_from_request(request, check_path=True)
-        groups = (Group.objects.language(language)
+        groups = (Group.objects.filter(show_in_menu=True).language(language)
                                .active_translations(language))
 
         for group in groups:
