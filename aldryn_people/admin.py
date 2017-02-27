@@ -88,6 +88,7 @@ class GroupAdmin(VersionedPlaceholderAdminMixin,
 
     list_display = ['__str__', 'city', 'num_people', 'sort_order', 'show_in_menu', ]
     search_filter = ['translations__name']
+    search_fields = ('translations__name',)
     fieldsets = (
         (None, {
             'fields': (
