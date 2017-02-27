@@ -24,7 +24,7 @@ class PersonAdmin(VersionedPlaceholderAdminMixin,
                   TranslatableAdmin):
 
     list_display = [
-        '__str__', 'email', 'vcard_enabled', 'num_groups', ]
+        '__str__', 'email', 'vcard_enabled', 'num_groups', 'sort_order', ]
     list_filter = ['groups', 'vcard_enabled']
     search_fields = ('translations__name', 'email', 'translations__function')
 
@@ -86,7 +86,7 @@ class GroupAdmin(VersionedPlaceholderAdminMixin,
                  AllTranslationsMixin,
                  TranslatableAdmin):
 
-    list_display = ['__str__', 'city', 'num_people', ]
+    list_display = ['__str__', 'city', 'num_people', 'sort_order', 'show_in_menu', ]
     search_filter = ['translations__name']
     fieldsets = (
         (None, {
