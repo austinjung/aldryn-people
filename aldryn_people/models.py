@@ -47,6 +47,7 @@ from filer.fields.image import FilerImageField
 from parler.models import TranslatableModel, TranslatedFields
 from aldryn_reversion.core import version_controlled_content
 from django.core.validators import RegexValidator
+from django.contrib.postgres.fields import ArrayField
 
 
 from .utils import get_additional_styles, get_geographic_coordinates
@@ -168,6 +169,49 @@ class Group(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
             return reverse('aldryn_people:group-detail', kwargs=kwargs)
 
 
+@version_controlled_content
+@python_2_unicode_compatible
+class RegionalGroup(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
+            TranslatableModel):
+    slug_source_field_name = 'name'
+    translations = TranslatedFields(
+        name=models.CharField(_('name'), max_length=255,
+                              help_text=_("Provide this regional group's name.")),
+        description=HTMLField(_('description'), blank=True),
+        slug=models.SlugField(_('slug'), max_length=255, default='',
+            blank=True,
+            help_text=_("Leave blank to auto-generate a unique slug.")),
+    )
+    latitudes = ArrayField(models.FloatField(), default=[], blank=True)
+    longitudes = ArrayField(models.FloatField(), default=[], blank=True)
+    number_of_sections = models.IntegerField(
+        verbose_name=_('number of sections'), blank=True, default=1)
+
+    class Meta:
+        verbose_name = _('Regional Group')
+        verbose_name_plural = _('Regional Groups')
+
+    def __str__(self):
+        return self.safe_translation_getter(
+            'name', default=_('Group: {0}').format(self.pk))
+
+    def get_absolute_url(self, language=None):
+        if not language:
+            language = get_current_language() or get_default_language()
+        slug, language = self.known_translation_getter(
+            'slug', None, language_code=language)
+        if slug:
+            kwargs = {'slug': slug}
+        else:
+            kwargs = {'pk': self.pk}
+        with override(language):
+            return reverse('aldryn_people:group-detail', kwargs=kwargs)
+
+    @property
+    def polygons(self):
+        return zip(self.latitudes, self.longitudes)
+
+
 @version_controlled_content(follow=['groups', 'user'])
 @python_2_unicode_compatible
 class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
@@ -199,6 +243,11 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
         'aldryn_people.Group', default=None, blank=True, related_name='people',
         help_text=_('Choose and order the groups for this person, the first '
                     'will be the "primary group".'))
+    regional_group = models.ForeignKey(
+        'aldryn_people.RegionalGroup', default=None, blank=True, null=True, related_name='people',
+        help_text=_('Choose the regional groups for this person.'))
+    regional_section_number = models.IntegerField(
+        verbose_name=_('Regional section number'), blank=True, default=None, null=True)
     visual = FilerImageField(
         null=True, blank=True, default=None, on_delete=models.SET_NULL)
     vcard_enabled = models.BooleanField(
@@ -271,6 +320,11 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
         geo_location = get_geographic_coordinates(self.get_address_for_geo_location())
         self.longitude = geo_location['lng']
         self.latitude = geo_location['lat']
+        if self.regional_section_number and self.regional_group:
+            if self.regional_section_number > self.regional_group.number_of_sections:
+                self.regional_section_number = None
+        else:
+            self.regional_section_number = None
 
     def get_address_for_geo_location(self):
         address = ''

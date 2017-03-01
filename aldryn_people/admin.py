@@ -16,7 +16,7 @@ from aldryn_translation_tools.admin import AllTranslationsMixin
 # be changed in further releases.
 from aldryn_reversion.admin import VersionedPlaceholderAdminMixin
 
-from .models import Person, Group
+from .models import Person, Group, RegionalGroup
 
 
 class PersonAdmin(VersionedPlaceholderAdminMixin,
@@ -66,7 +66,7 @@ class PersonAdmin(VersionedPlaceholderAdminMixin,
         }),
         (None, {
             'fields': (
-                'groups',
+                'groups', 'regional_group', 'regional_section_number'
             ),
         }),
     )
@@ -116,5 +116,40 @@ class GroupAdmin(VersionedPlaceholderAdminMixin,
     num_people.admin_order_field = 'people_count'
 
 
+class RegionalGroupAdmin(VersionedPlaceholderAdminMixin,
+                         AllTranslationsMixin,
+                         TranslatableAdmin):
+
+    readonly_fields = ('polygons', )
+    list_display = ['__str__', 'num_people', 'polygons', 'number_of_sections', ]
+    search_filter = ['translations__name']
+    search_fields = ('translations__name',)
+    fieldsets = (
+        (None, {
+            'fields': (
+                'name',
+                'slug',
+                'description',
+            ),
+        }),
+        (_('Regional Infomation (untranslated)'), {
+            'fields': (
+                'latitudes', 'longitudes', 'number_of_sections',
+            )
+        }),
+    )
+
+    def get_queryset(self, request):
+        qs = super(RegionalGroupAdmin, self).get_queryset(request)
+        qs = qs.annotate(people_count=Count('people'))
+        return qs
+
+    def num_people(self, obj):
+        return obj.people_count
+    num_people.short_description = _('# People')
+    num_people.admin_order_field = 'people_count'
+
+
 admin.site.register(Person, PersonAdmin)
 admin.site.register(Group, GroupAdmin)
+admin.site.register(RegionalGroup, RegionalGroupAdmin)
