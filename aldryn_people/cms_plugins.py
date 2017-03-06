@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from django.utils.translation import ugettext_lazy as _
 
@@ -33,6 +33,13 @@ class PeoplePlugin(CMSPluginBase):
                 'style',
             ),
         }),
+        (_('Group Filter'), {
+            'description': _('Select and arrange specific groups, or leave '
+                             'blank to not use group filters at all.'),
+            'fields': (
+                'groups',
+            )
+        }),
         (_('People'), {
             'description': _('Select and arrange specific people, or leave '
                              'blank to use all.'),
@@ -49,22 +56,30 @@ class PeoplePlugin(CMSPluginBase):
         })
     )
 
-    def group_people(self, people):
-        groups = defaultdict(list)
+    def group_people(self, people, selected_groups=None):
+        groups = OrderedDict()
+        for group in selected_groups:
+            groups[group] = []
 
         for person in people:
-            for group in person.groups.all():
-                groups[group].append(person)
+            if selected_groups is None:
+                for group in person.groups.all():
+                    groups[group].append(person)
+            else:
+                selected_group_ids = [group.id for group in selected_groups]
+                for group in person.groups.filter(id__in=selected_group_ids):
+                    groups[group].append(person)
 
-        # Fixes a template resolution-related issue. See:
-        # http://stackoverflow.com/questions/4764110/django-template-cant-loop-defaultdict  # noqa
-        groups.default_factory = None
         return groups
 
     def render(self, context, instance, placeholder):
-        people = instance.get_selected_people()
-        if not people:
-            people = models.Person.objects.all()
+        selected_groups = instance.get_selected_groups()
+        if selected_groups.count() == 0:
+            people = instance.get_selected_people()
+            if not people:
+                people = models.Person.objects.all()
+        else:
+            people = models.Person.objects.filter(groups__in=selected_groups)
         valid_languages = get_valid_languages(
             DEFAULT_APP_NAMESPACE, instance.language, context['request'])
         people = people.translated(*valid_languages)
@@ -75,8 +90,8 @@ class PeoplePlugin(CMSPluginBase):
         context['instance'] = instance
         context['people'] = people
 
-        if instance.group_by_group:
-            context['people_groups'] = self.group_people(people)
+        if instance.group_by_group and selected_groups.count() > 0:
+            context['people_groups'] = self.group_people(people, selected_groups=selected_groups)
             if instance.show_ungrouped:
                 groupless = people.filter(groups__isnull=True)
             else:

@@ -150,7 +150,6 @@ class Group(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
     class Meta:
         verbose_name = _('Group')
         verbose_name_plural = _('Groups')
-        ordering = ['sort_order']
 
     def __str__(self):
         return self.safe_translation_getter(
@@ -276,10 +275,20 @@ class Person(TranslationHelperMixin, TranslatedAutoSlugifyMixin,
     longitude = models.FloatField(null=True, blank=True, verbose_name='Longitude')
     email_confirmed = models.BooleanField(default=False)
 
+    parish_account = models.CharField(max_length=30, blank=True, null=True, default=None, verbose_name=_('Parish Account'))
+    RELATIONSHIP_CHOICES = [
+        ('self', _('Self')),
+        ('spouse', _('Spouse')),
+        ('child', _('Child')),
+        ('other', _('Other'))
+    ]
+    relationship = models.CharField(
+        _('Relationship'), choices=RELATIONSHIP_CHOICES,
+        default=RELATIONSHIP_CHOICES[0][0], max_length=50)
+
     class Meta:
         verbose_name = _('Person')
         verbose_name_plural = _('People')
-        ordering = ['sort_order']
 
     def __str__(self):
         pkstr = str(self.pk)
@@ -454,6 +463,12 @@ class BasePeoplePlugin(CMSPlugin):
                     'select all.')
     )
 
+    groups = SortedM2MModelField(
+        Group, blank=True,
+        help_text=_('Select and arrange specific groups, or, leave blank to '
+                    'select specific people.')
+    )
+
     # Add an app namespace to related_name to avoid field name clashes
     # with any other plugins that have a field with the same name as the
     # lowercase of the class name of this model.
@@ -477,6 +492,10 @@ class BasePeoplePlugin(CMSPlugin):
 
     def copy_relations(self, oldinstance):
         self.people = oldinstance.people.all()
+        self.groups = oldinstance.groups.all()
+
+    def get_selected_groups(self):
+        return self.groups.select_related()
 
     def get_selected_people(self):
         return self.people.select_related('visual')
