@@ -12,6 +12,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterModelOptions(
+            name='group',
+            options={'verbose_name': 'Group', 'verbose_name_plural': 'Groups'},
+        ),
+        migrations.AlterModelOptions(
+            name='person',
+            options={'verbose_name': 'Person', 'verbose_name_plural': 'People'},
+        ),
         migrations.AddField(
             model_name='peopleplugin',
             name='groups',
