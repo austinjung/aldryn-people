@@ -14,16 +14,17 @@
             </p>
         {% endif %}
 
-        <h4>
+        <h5>
             {% if not detail_view %}
                 <a href="{{ person.get_absolute_url }}">{{ person.name }}</a>
             {% else %}
                 {% render_model person 'name' %}
             {% endif %}
             <small>{{ person.function }}</small>
-        </h4>
+        </h5>
 
         <p class="meta">
+            <h5>
             {% if person.phone %}
                 <strong>{% trans "Phone:" %}</strong>
                 {{ person.phone|phoneformat }}<br>
@@ -42,6 +43,7 @@
                 <span class="fa fa-fw fa-globe" aria-hidden="true"></span>
                 <a href="{{ person.website }}" target="_blank">{{ person.website }}</a><br>
             {% endif %}
+            </h5>
         </p>
     </div>
 </article>
