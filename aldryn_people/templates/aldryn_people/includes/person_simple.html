@@ -7,7 +7,7 @@
                 {% if instance.show_links %}
                     <a href="{{ person.get_absolute_url }}">
                 {% endif %}
-                    <img src="/media/{{ person.visual.file }}" alt="{{ person.name }}" style="width: 270px;">
+                    <img src="{% thumbnail person.visual 400x300 crop subject_location=person.visual.subject_location %}" alt="{{ person.name }}" style="width: 270px;">
                 {% if instance.show_links %}
                     </a>
                 {% endif %}
